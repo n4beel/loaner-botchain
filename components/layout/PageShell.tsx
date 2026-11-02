@@ -116,7 +116,7 @@ export default function PageShell({
         <div className="mx-auto w-full max-w-[1020px] px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <a
-              href={links.botchain}
+              href={links.site}
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[var(--accent)] transition-colors hover:underline"
