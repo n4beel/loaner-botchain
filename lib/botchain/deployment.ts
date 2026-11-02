@@ -41,6 +41,8 @@ export const DEPLOYMENTS: Record<BotChainId, Deployment> = {
   },
 };
 
+export const DEFAULT_NFT_ADDRESS = (process.env.NEXT_PUBLIC_NFT_968 as Address) ?? ZERO_ADDRESS;
+
 export function getDeployment(chainId: BotChainId): Deployment {
   return DEPLOYMENTS[chainId];
 }
