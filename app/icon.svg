@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Wood-paper ground -->
+  <rect width="32" height="32" rx="6" fill="#F0E7DB" />
+  
+  <!-- Book spine standing on shelf -->
+  <rect x="10" y="4" width="12" height="23" rx="2" fill="#2A6F97" />
+  <rect x="10" y="4" width="2.5" height="23" rx="1" fill="#1B3B6F" fill-opacity="0.6" />
+  
+  <!-- Spine ribs / embossing -->
+  <line x1="10" y1="8" x2="22" y2="8" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="1" />
+  <line x1="10" y1="23" x2="22" y2="23" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="1" />
+  
+  <!-- Section symbol § -->
+  <text x="16" y="17.5" font-family="Georgia, serif" font-size="10" font-weight="bold" fill="#FFFFFF" text-anchor="middle">§</text>
+  
+  <!-- Shelf ledge board -->
+  <rect x="4" y="27" width="24" height="2.5" rx="1" fill="#8A5A36" />
+</svg>
