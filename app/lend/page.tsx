@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAddress, type Address } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
@@ -35,8 +35,8 @@ export default function LendTokenPage() {
   const [checkingToken, setCheckingToken] = useState(false);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
 
-  const checkTokenStatus = async () => {
-    if (!publicClient || !address || !isAddress(nftAddress) || !tokenId) return;
+  const checkTokenStatus = useCallback(async (): Promise<boolean | null> => {
+    if (!publicClient || !address || !isAddress(nftAddress) || !tokenId || !deployment.address) return null;
     setCheckingToken(true);
     setFormError(null);
     try {
@@ -49,8 +49,8 @@ export default function LendTokenPage() {
 
       if (owner.toLowerCase() !== address.toLowerCase()) {
         setFormError("You do not hold this token. Current owner is " + owner);
-        setIsApproved(false);
-        return;
+        setIsApproved(null);
+        return null;
       }
 
       const [singleApp, allApp] = await Promise.allSettled([
@@ -72,13 +72,26 @@ export default function LendTokenPage() {
       const all = allApp.status === "fulfilled" ? Boolean(allApp.value) : false;
       const approved = all || (single?.toLowerCase() === deployment.address.toLowerCase());
       setIsApproved(approved);
+      return approved;
     } catch {
-      setFormError("Could not verify token. Confirm the contract is a standard ERC-721.");
+      setFormError("Could not verify token. Confirm the contract is a standard ERC-721 and the token ID exists.");
       setIsApproved(null);
+      return null;
     } finally {
       setCheckingToken(false);
     }
-  };
+  }, [publicClient, address, nftAddress, tokenId, deployment.address]);
+
+  // Check ownership and approval on its own whenever the token or wallet changes, so the form never offers
+  // "Deposit" for a token Loaner is not yet approved to hold.
+  useEffect(() => {
+    setIsApproved(null);
+    if (!isConnected || !isAddress(nftAddress) || tokenId === "") return;
+    const t = setTimeout(() => {
+      void checkTokenStatus();
+    }, 300);
+    return () => clearTimeout(t);
+  }, [isConnected, nftAddress, tokenId, checkTokenStatus]);
 
   const handleApprove = async () => {
     setFormError(null);
@@ -86,8 +99,8 @@ export default function LendTokenPage() {
     if (!isAddress(nftAddress) || !tokenId) return;
     try {
       await approveToken(nftAddress as Address, BigInt(tokenId));
-      setActionSuccess("Token approved for Loaner contract!");
-      setIsApproved(true);
+      const ok = await checkTokenStatus();
+      if (ok) setActionSuccess("Token approved. You can deposit it now.");
     } catch {}
   };
 
@@ -103,6 +116,11 @@ export default function LendTokenPage() {
 
     if (!isAddress(nftAddress)) {
       setFormError("Enter a valid NFT contract address.");
+      return;
+    }
+
+    if (tokenId === "" || !/^\d+$/.test(tokenId)) {
+      setFormError("Token ID must be a whole number.");
       return;
     }
 
@@ -122,6 +140,12 @@ export default function LendTokenPage() {
 
     if (maxDays < 1 || maxDays > 90) {
       setFormError("Maximum rental days must be between 1 and 90.");
+      return;
+    }
+
+    const approved = await checkTokenStatus();
+    if (approved !== true) {
+      if (approved === false) setFormError("Approve the token first, then deposit.");
       return;
     }
 
@@ -225,7 +249,7 @@ export default function LendTokenPage() {
             <div className="flex items-center justify-between text-xs font-mono">
               <button
                 type="button"
-                onClick={checkTokenStatus}
+                onClick={() => void checkTokenStatus()}
                 disabled={checkingToken || !isAddress(nftAddress)}
                 className="text-[var(--accent)] hover:underline"
               >
@@ -310,7 +334,7 @@ export default function LendTokenPage() {
                   type="button"
                   variant="secondary"
                   onClick={handleApprove}
-                  disabled={isPending}
+                  disabled={isPending || checkingToken}
                 >
                   {isPending ? "Approving..." : "Step 1: Approve Token"}
                 </Button>
@@ -318,9 +342,15 @@ export default function LendTokenPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={isPending}
+                  disabled={isPending || checkingToken || isApproved !== true}
                 >
-                  {isPending ? "Escrowing..." : "Deposit & List on Shelf →"}
+                  {isPending
+                    ? "Escrowing..."
+                    : checkingToken
+                    ? "Checking token…"
+                    : isApproved === true
+                    ? "Step 2: Deposit & List on Shelf →"
+                    : "Enter a token you hold"}
                 </Button>
               )}
             </div>

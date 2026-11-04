@@ -494,6 +494,7 @@ export function useUserLoanerDesk(userAddress?: Address) {
 }
 
 export function useLoanerActions() {
+  const { address: account } = useAccount();
   const deployment = useLoanerDeployment();
   const publicClient = usePublicClient({ chainId: activeBotChain.id }); // stable-hook-result
   const { writeContractAsync } = useWriteContract();
@@ -512,6 +513,15 @@ export function useLoanerActions() {
       setIsPending(true);
       setTxError(null);
       try {
+        // Simulate first: a token that was never approved reverts inside the NFT contract, and the wallet would
+        // otherwise let the user pay gas for a transaction that cannot succeed.
+        await publicClient.simulateContract({
+          account,
+          address: deployment.address,
+          abi: loanerAbi,
+          functionName: "list",
+          args: [nft, tokenId, pricePerDay, deposit, maxDays],
+        });
         const hash = await writeContractAsync({
           address: deployment.address,
           abi: loanerAbi,
@@ -528,7 +538,7 @@ export function useLoanerActions() {
         setIsPending(false);
       }
     },
-    [publicClient, deployment.address, writeContractAsync]
+    [publicClient, deployment.address, writeContractAsync, account]
   );
 
   const rentToken = useCallback(
@@ -563,6 +573,14 @@ export function useLoanerActions() {
       setIsPending(true);
       setTxError(null);
       try {
+        // Simulate first so a missing approval is reported before the wallet opens.
+        await publicClient.simulateContract({
+          account,
+          address: deployment.address,
+          abi: loanerAbi,
+          functionName: "giveBack",
+          args: [id],
+        });
         const hash = await writeContractAsync({
           address: deployment.address,
           abi: loanerAbi,
@@ -579,7 +597,7 @@ export function useLoanerActions() {
         setIsPending(false);
       }
     },
-    [publicClient, deployment.address, writeContractAsync]
+    [publicClient, deployment.address, writeContractAsync, account]
   );
 
   const claimDeposit = useCallback(

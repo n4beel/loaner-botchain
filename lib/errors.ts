@@ -52,6 +52,10 @@ export function decodeContractError(err: unknown): string {
     return "You do not own this token.";
   }
 
+  if (/NotOwnerOrApproved|not (token )?owner or approved|ERC721InsufficientApproval|caller is not token owner/i.test(message)) {
+    return "Loaner has not been approved to move this token yet. Approve the token first, then try again.";
+  }
+
   if (message.includes("EscrowFailed")) {
     return "Token escrow failed. Check token approval.";
   }
